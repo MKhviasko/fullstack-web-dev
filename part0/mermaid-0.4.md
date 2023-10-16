@@ -1,5 +1,6 @@
 #  Task 0-0.4
 
+```mermaid
 sequenceDiagram
     participant browser
     participant server
@@ -31,3 +32,4 @@ sequenceDiagram
     activate server
     server-->>browser: [{ content: "my_note", date: "2023-10-16" }, ...]
     deactivate server
+```  
