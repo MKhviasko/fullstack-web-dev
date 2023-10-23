@@ -1,24 +1,25 @@
 import { useState } from 'react'
-import Filter from './Filter'
-import PersonForm from './PersonForm.jsx'
-import Persons from './Persons'
+import Filter from './components/Filter'
+import PersonForm from './components/PersonForm.jsx'
+import Persons from './components/Persons'
 import { useEffect } from 'react'
-import axios from 'axios';
+import personService from './services/persons'
+import RemovePersonForm from './components/RemovePersonForm'
 
 const App = () => {
   const [persons, setPersons] = useState([]) 
 
   useEffect(() => {
-    const eventHandler = response => {
+    personService.getAll()
+    .then(response => {
       setPersons(response.data)
-    }
-    const promise = axios.get('http://localhost:3001/persons')
-    promise.then(eventHandler)
+    })
   }, [])
 
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setNewFilter] = useState('')
+  const [removePersonName, setRemovePersonName] = useState('')
 
   const handleNumberChange = (event) => {
     setNewNumber(event.target.value)
@@ -32,22 +33,54 @@ const App = () => {
     setNewFilter(event.target.value)
   }
 
-  const checkPersonPresence = () => {
-    return persons.some((person) => person.name === newName)
+  const handlePersonNameChange = (event) => {
+    setRemovePersonName(event.target.value)
+  }
+
+  const findPersonByName = () => {
+    return persons.find((person) => person.name === newName)
   }
 
   const addNewPerson = (event) => {
     event.preventDefault()
-    if(checkPersonPresence()){
+    const foundPerson = findPersonByName()
+    if(foundPerson == null){
+      const newPerson = {
+        name: newName,
+        number: newNumber
+      }
+      personService.create(newPerson)
+      .then(response => {
+        setPersons(persons.concat(response.data))
+        setNewName('')
+        setNewNumber('')
+      })
+    } else if (foundPerson.number != newNumber && confirm(`${foundPerson.name} is already added to the phoneook, replace the old number with a new one?`)){
+      const updatePerson = {
+        name: foundPerson.name,
+        number: newNumber
+      }
+      personService.update(foundPerson.id, updatePerson)
+      .then(response => {
+        setPersons(persons.concat(response.data).filter(person => person != foundPerson))
+        setNewName('')
+        setNewNumber('')
+      })
+    } else if(foundPerson.number == newNumber){
       return window.alert(`${newName} is already added to phonebook`)
     }
-    const newPerson = {
-      name: newName,
-      number: newNumber
-    }
-    setPersons(persons.concat(newPerson))
-    setNewName('')
-    setNewNumber('')
+  }
+
+  const removePersonHandler = (event) => {
+    event.preventDefault()
+    const personToRemove = persons.find(person => removePersonName.toLowerCase() === person.name.toLowerCase())
+    if((personToRemove != null) && confirm(`Delete ${personToRemove.name}?`)){
+    personService.remove(personToRemove.id)
+    .then(() => {
+      setPersons(persons.filter(person => person.id != personToRemove.id))
+      setRemovePersonName('')
+    })
+  }
   }
 
   const filteredPersons = persons.filter(person => person.name.toLowerCase().includes(filter.toLowerCase()));
@@ -58,6 +91,8 @@ const App = () => {
       <Filter filter={filter} handleFilterChange={handleFilterChange}/>
       <h3>add a new</h3>
       <PersonForm addNewPerson={addNewPerson} newName={newName} newNumber={newNumber} handleNameChange={handleNameChange} handleNumberChange={handleNumberChange}/>
+      <h3>remove person</h3>
+      <RemovePersonForm removePersonHandler={removePersonHandler} personName={removePersonName} handlePersonNameChange={handlePersonNameChange}/>
       <h3>Numbers</h3>
       <Persons filteredPersons={filteredPersons}/>
     </div>
