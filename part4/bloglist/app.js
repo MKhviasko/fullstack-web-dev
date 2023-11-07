@@ -7,10 +7,16 @@ const middleware = require('./utils/middleware')
 const logger = require('./utils/logger')
 const mongoose = require('mongoose')
 require('dotenv').config()
+require('express-async-errors')
 
 mongoose.set('strictQuery', false)
-logger.info('connecting to', process.env.MONGODB_URI)
-mongoose.connect(process.env.MONGODB_URI)
+
+const MONGODB_URI = process.env.NODE_ENV === 'test'
+    ? process.env.TEST_MONGODB_URI
+    : process.env.MONGODB_URI
+
+logger.info('connecting to', MONGODB_URI)
+mongoose.connect(MONGODB_URI)
     .then(() => {
         logger.info('connected to MongoDB')
     })
@@ -29,3 +35,4 @@ app.use(middleware.unknownEndpoint)
 app.use(middleware.errorHandler)
 
 module.exports = app
+
