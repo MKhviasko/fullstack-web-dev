@@ -59,8 +59,20 @@ test('there are two blogs', async () => {
     expect(response).toHaveLength(2)
 })
 
-test.skip('a valid blog can be added', async () => {
+test('a valid blog can be added', async () => {
     const user = await User.findOne({})
+
+    const credentials = {
+        username: user.username,
+        password: 'sekret'
+    }
+
+    const loginResponse = await api
+        .post('/api/login')
+        .send(credentials)
+        .expect(200)
+
+    const token = loginResponse.body.token
 
     const newBlog = {
         title: 'Test',
@@ -72,6 +84,7 @@ test.skip('a valid blog can be added', async () => {
 
     await api
         .post('/api/blogs')
+        .set('Authorization', `Bearer ${token}`)
         .send(newBlog)
         .expect(201)
         .expect('Content-Type', /application\/json/)
